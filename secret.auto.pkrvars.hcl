@@ -16,9 +16,6 @@ vm_disk_size             = "200G"
 vm_disk_type             = "scsi"
 vm_disk_storage          = "local-lvm"
 
-ssh_username            = "packer"
-ssh_password            = "packerpassword"
-
 iso_url                 = "http://releases.ubuntu.com/22.04/ubuntu-22.04-live-server-amd64.iso"
 iso_type                = "scsi"
 iso_storage_pool        = "local"

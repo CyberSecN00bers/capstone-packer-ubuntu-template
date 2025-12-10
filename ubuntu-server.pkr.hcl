@@ -71,15 +71,6 @@ variable "vm_disk_storage" {
   type = string
 }
 
-variable "ssh_username" {
-  type = string
-}
-
-variable "ssh_password" {
-  type = string
-  sensitive = true
-}
-
 variable "iso_url" {
   type = string
 }
@@ -178,8 +169,8 @@ source "proxmox-iso" "vm" {
   cloud_init_storage_pool = var.cloud_init_storage_pool
 
   # SSH config for Packer to connect and run provisioning scripts
-  ssh_username = var.ssh_username
-  ssh_password = var.ssh_password
+  ssh_username = "packer"
+  ssh_password = "packerpassword"
   ssh_timeout  = "20m"
 
   # --- MAGIC PART (Autoinstall) ---
