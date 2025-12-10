@@ -55,15 +55,7 @@ variable "vm_network_adapter" {
   type = string
 }
 
-variable "vm_network_model" {
-  type = string
-}
-
 variable "vm_disk_size" {
-  type = string
-}
-
-variable "vm_disk_type" {
   type = string
 }
 
@@ -71,49 +63,14 @@ variable "vm_disk_storage" {
   type = string
 }
 
-variable "iso_url" {
-  type = string
-}
-
-variable "iso_type" {
-  type = string
-}
-
 variable "iso_storage_pool" {
   type = string
-}
-
-variable "iso_download_pve" {
-  type = bool
-}
-
-variable "iso_checksum" {
-  type = string
-}
-
-variable "iso_unmount" {
-  type = bool
 }
 
 variable "cloud_init_storage_pool" {
   type = string
 }
 
-variable "boot_key_interval" {
-  type = string
-}
-
-variable "boot_command" {
-  type = list(string)
-}
-
-variable "http_directory" {
-  type = string
-}
-
-variable "extra_packages" {
-  type = string
-}
 
 # --- SOURCE (Define the VM to be built) ---
 source "proxmox-iso" "vm" {
@@ -137,14 +94,14 @@ source "proxmox-iso" "vm" {
   # Network & Disk configuration
   network_adapters {
     bridge = var.vm_network_adapter
-    model  = var.vm_network_model
+    model  = "virtio"
   }
 
   scsi_controller = "virtio-scsi-pci"
   disks {
     disk_size    = var.vm_disk_size
     storage_pool = var.vm_disk_storage
-    type         = var.vm_disk_type
+    type         = "scsi"
   }
 
   # ISO file (Packer will download to Proxmox if not present, or you can upload it manually)
@@ -154,12 +111,11 @@ source "proxmox-iso" "vm" {
   # unmount_iso  = true
 
   boot_iso {
-    type = var.iso_type
+    type = "scsi"
     iso_storage_pool = var.iso_storage_pool
-    iso_download_pve = var.iso_download_pve
-    iso_url  = var.iso_url
-    unmount = var.iso_unmount
-    iso_checksum = var.iso_checksum
+    iso_url  = "http://releases.ubuntu.com/22.04/ubuntu-22.04-live-server-amd64.iso"
+    unmount = true
+    iso_checksum = "file:https://releases.ubuntu.com/22.04/SHA256SUMS"
   }
 
   qemu_agent = true
@@ -174,11 +130,19 @@ source "proxmox-iso" "vm" {
   ssh_timeout  = "20m"
 
   # --- MAGIC PART (Autoinstall) ---
-  boot_key_interval = var.boot_key_interval
-  boot_command = var.boot_command
+  boot_key_interval = "100ms"
+  boot_command = [
+      "<esc><wait>",
+      "c<wait>",
+      "linux /casper/vmlinuz --- autoinstall 'ds=nocloud-net;s=http://{{ .HTTPIP }}:{{ .HTTPPort }}/'",
+      "<enter><wait>",
+      "initrd /casper/initrd",
+      "<enter><wait>",
+      "boot<enter>"
+  ]
 
   # Packer will set up a temporary web server to serve the user-data file
-  http_directory = var.http_directory
+  http_directory = "http"
 }
 
 # --- BUILD ---
@@ -192,7 +156,7 @@ build {
     inline = [
       "while [ ! -f /var/lib/cloud/instance/boot-finished ]; do echo 'Waiting for cloud-init...'; sleep 1; done",
       "sudo apt-get update",
-      "sudo apt-get install -y cloud-init ${var.extra_packages}",
+      "sudo apt-get install -y cloud-init vim git curl",
       "sudo apt-get clean"
     ]
   }
@@ -202,7 +166,7 @@ build {
     inline = [
       "curl -fsSL https://get.docker.com -o get-docker.sh",
       "sh get-docker.sh",
-      "sudo usermod -aG docker ${var.ssh_username}",
+      "sudo usermod -aG docker ${build.Password}",
       "rm get-docker.sh"
     ]
   }
