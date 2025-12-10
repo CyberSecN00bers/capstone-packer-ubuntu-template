@@ -1,0 +1,32 @@
+#cloud-config
+autoinstall:
+  version: 1
+  locale: en_US.UTF-8
+  keyboard:
+    layout: en
+    variant: us
+
+  source:
+    id: ubuntu-server-minimal
+  identity:
+    hostname: ubuntu-template
+    password: "$6$D8mbcLMJ8voGDtdY$94I/rv9hbg1BLHFG0l7DpKUXNWw6.RPIpxFBfpwn8j1VBE1wEWzPzm5lD3q8wmOIuB/2.3JmHDto1ilFuHMnr/"
+    username: packer
+  ssh:
+    install-server: true
+    allow-pw: true
+  storage:
+    layout:
+      name: direct
+  user-data:
+    disable_root: false
+
+  packages:
+    - qemu-guest-agent
+    - cloud-init
+    - net-tools
+
+  # Update user priviledge
+  late-commands:
+    - "echo 'packer ALL=(ALL) NOPASSWD:ALL' > /target/etc/sudoers.d/packer"
+    - "chmod 440 /target/etc/sudoers.d/packer"
